@@ -1,2 +1,2 @@
-# ImageCrepper
+# ImageCropper
 ImageCropper feature package
