@@ -22,6 +22,7 @@ let package = Package(
         .target(
             name: "ImageCropper",
             dependencies: [],
+            path: "ImageCropper/Cropper",
             resources: [
                 .process("SampleAssets/Images")
             ]
