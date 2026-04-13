@@ -81,20 +81,20 @@ public struct ImageCropperView: View {
     
     private var toolbar: some View {
         HStack {
-            Button("Anuluj") {
+            Button("cancel".localized) {
                 onCancel()
             }
             .foregroundColor(.white)
             
             Spacer()
             
-            Text("Przytnij zdjęcie")
+            Text("crop".localized)
                 .font(.headline)
                 .foregroundColor(.white)
             
             Spacer()
             
-            Button("Gotowe") {
+            Button("ready".localized) {
                 do {
                     let result = try viewModel.performCrop()
                     onCrop(result)
@@ -119,7 +119,7 @@ public struct ImageCropperView: View {
                 VStack {
                     Image(systemName: "square")
                         .font(.title2)
-                    Text("Kwadrat")
+                    Text("square".localized)
                         .font(.caption)
                 }
             }
@@ -147,7 +147,7 @@ public struct ImageCropperView: View {
                 VStack {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(.title2)
-                    Text("Pełny")
+                    Text("full".localized)
                         .font(.caption)
                 }
             }

@@ -16,13 +16,13 @@ public enum ImageCropperError: Error, LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .invalidImage:
-            return "Dostarczone zdjęcie jest nieprawidłowe"
+            return "err_invalid_image".localized
         case .invalidCropRect:
-            return "Obszar przycinania jest nieprawidłowy"
+            return "err_invalid_crop".localized
         case .croppingFailed:
-            return "Nie udało się przyciąć zdjęcia"
+            return "err_crop_failed".localized
         case .cgImageCreationFailed:
-            return "Nie udało się utworzyć CGImage"
+            return "err_cgimage_failed".localized
         }
     }
 }

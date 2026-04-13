@@ -143,12 +143,13 @@ public final class Cropper {
     
     #if canImport(UIKit)
     private func performCropUIKit(image: UIImage, rect: CGRect) throws -> UIImage {
-        guard let cgImage = image.cgImage else {
+        let normalizedImage = normalizeImageOrientationIfNeeded(image)
+        guard let cgImage = normalizedImage.cgImage else {
             throw ImageCropperError.cgImageCreationFailed
         }
         
         // Konwersja na piksele
-        let scale = image.scale
+        let scale = normalizedImage.scale
         let scaledRect = CGRect(
             x: rect.origin.x,
             y: rect.origin.y,
@@ -160,7 +161,21 @@ public final class Cropper {
             throw ImageCropperError.croppingFailed
         }
         
-        return UIImage(cgImage: croppedCGImage, scale: scale, orientation: image.imageOrientation)
+        // Po normalizacji orientacji zawsze zwracamy obraz w orientacji .up
+        return UIImage(cgImage: croppedCGImage, scale: scale, orientation: .up)
+    }
+    
+    private func normalizeImageOrientationIfNeeded(_ image: UIImage) -> UIImage {
+        guard image.imageOrientation != .up else {
+            return image
+        }
+        
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = image.scale
+        let renderer = UIGraphicsImageRenderer(size: image.size, format: format)
+        return renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: image.size))
+        }
     }
     #endif
     
