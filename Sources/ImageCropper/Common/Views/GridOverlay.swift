@@ -12,7 +12,6 @@ struct GridOverlay: View {
     
     var body: some View {
         ZStack {
-            // Pionowe linie
             ForEach(1..<3) { i in
                 let x = cropRect.minX + cropRect.width * CGFloat(i) / 3
                 Path { path in
@@ -22,7 +21,6 @@ struct GridOverlay: View {
                 .stroke(Color.white.opacity(0.5), lineWidth: 1)
             }
             
-            // Poziome linie
             ForEach(1..<3) { i in
                 let y = cropRect.minY + cropRect.height * CGFloat(i) / 3
                 Path { path in

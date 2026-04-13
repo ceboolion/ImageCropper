@@ -55,6 +55,21 @@ struct ImageCropperTests {
         #endif
     }
     
+    #if canImport(UIKit)
+    private func createOrientedTestImage(
+        width: CGFloat,
+        height: CGFloat,
+        orientation: UIImage.Orientation
+    ) -> UIImage {
+        let baseImage = createTestImage(width: width, height: height)
+        guard let cgImage = baseImage.cgImage else {
+            return baseImage
+        }
+        
+        return UIImage(cgImage: cgImage, scale: baseImage.scale, orientation: orientation)
+    }
+    #endif
+    
     // MARK: - Basic Cropping Tests
     
     @Test("Podstawowe przycinanie zdjęcia")
@@ -94,45 +109,68 @@ struct ImageCropperTests {
         }
     }
     
+    #if canImport(UIKit)
+    @Test("Przycinanie zdjęcia z orientacją EXIF")
+    func croppingImageWithOrientation() throws {
+        let image = createOrientedTestImage(width: 300, height: 200, orientation: .right)
+        let pixelSize = getImageSize(image)
+        let rect = CGRect(x: 20, y: 30, width: pixelSize.width * 0.4, height: pixelSize.height * 0.3)
+        
+        let result = try cropper.crop(image: image, to: rect)
+        let croppedSize = getImageSize(result.croppedImage)
+        
+        #expect(croppedSize.width == rect.width)
+        #expect(croppedSize.height == rect.height)
+        #expect(result.croppedImage.imageOrientation == .up)
+    }
+    #endif
+    
     // MARK: - Square Cropping Tests
     
     @Test("Przycinanie do kwadratu - kwadratowe zdjęcie")
     func cropToSquareFromSquareImage() throws {
         let image = createTestImage(width: 100, height: 100)
+        let originalSize = getImageSize(image)
         let result = try cropper.cropToSquare(image: image)
         
         let croppedSize = getImageSize(result.croppedImage)
-        #expect(croppedSize.width == 100)
-        #expect(croppedSize.height == 100)
+        #expect(croppedSize.width == originalSize.width)
+        #expect(croppedSize.height == originalSize.height)
         #expect(croppedSize.width == croppedSize.height)
     }
     
     @Test("Przycinanie do kwadratu - szerokie zdjęcie")
     func cropToSquareFromWideImage() throws {
         let image = createTestImage(width: 200, height: 100)
+        let originalSize = getImageSize(image)
         let result = try cropper.cropToSquare(image: image)
         
         let croppedSize = getImageSize(result.croppedImage)
-        #expect(croppedSize.width == 100)
-        #expect(croppedSize.height == 100)
+        let expectedSide = min(originalSize.width, originalSize.height)
+        #expect(croppedSize.width == expectedSide)
+        #expect(croppedSize.height == expectedSide)
         
         // Sprawdź czy przycięto ze środka
-        #expect(result.cropRect.origin.x == 50)
+        let expectedX = (originalSize.width - expectedSide) / 2
+        #expect(result.cropRect.origin.x == expectedX)
         #expect(result.cropRect.origin.y == 0)
     }
     
     @Test("Przycinanie do kwadratu - wysokie zdjęcie")
     func cropToSquareFromTallImage() throws {
         let image = createTestImage(width: 100, height: 200)
+        let originalSize = getImageSize(image)
         let result = try cropper.cropToSquare(image: image)
         
         let croppedSize = getImageSize(result.croppedImage)
-        #expect(croppedSize.width == 100)
-        #expect(croppedSize.height == 100)
+        let expectedSide = min(originalSize.width, originalSize.height)
+        #expect(croppedSize.width == expectedSide)
+        #expect(croppedSize.height == expectedSide)
         
         // Sprawdź czy przycięto ze środka
+        let expectedY = (originalSize.height - expectedSide) / 2
         #expect(result.cropRect.origin.x == 0)
-        #expect(result.cropRect.origin.y == 50)
+        #expect(result.cropRect.origin.y == expectedY)
     }
     
     // MARK: - Aspect Ratio Tests
@@ -174,16 +212,17 @@ struct ImageCropperTests {
     @Test("Przycinanie ze współrzędnymi znormalizowanymi")
     func croppingWithNormalizedCoordinates() throws {
         let image = createTestImage(width: 100, height: 100)
+        let originalSize = getImageSize(image)
         let normalizedRect = CGRect(x: 0.1, y: 0.1, width: 0.5, height: 0.5)
         
         let result = try cropper.crop(image: image, toNormalized: normalizedRect)
         
         let croppedSize = getImageSize(result.croppedImage)
-        #expect(croppedSize.width == 50)
-        #expect(croppedSize.height == 50)
+        #expect(croppedSize.width == originalSize.width * normalizedRect.width)
+        #expect(croppedSize.height == originalSize.height * normalizedRect.height)
         
-        #expect(result.cropRect.origin.x == 10)
-        #expect(result.cropRect.origin.y == 10)
+        #expect(result.cropRect.origin.x == originalSize.width * normalizedRect.origin.x)
+        #expect(result.cropRect.origin.y == originalSize.height * normalizedRect.origin.y)
     }
     
     @Test("Przycinanie całego zdjęcia ze współrzędnymi znormalizowanymi")
@@ -204,6 +243,7 @@ struct ImageCropperTests {
     @Test("Przycinanie ze środka do określonego rozmiaru")
     func cropCenterToSize() throws {
         let image = createTestImage(width: 200, height: 200)
+        let originalSize = getImageSize(image)
         let targetSize = CGSize(width: 100, height: 100)
         
         let result = try cropper.cropCenter(image: image, to: targetSize)
@@ -212,13 +252,16 @@ struct ImageCropperTests {
         #expect(croppedSize == targetSize)
         
         // Sprawdź czy przycięto ze środka
-        #expect(result.cropRect.origin.x == 50)
-        #expect(result.cropRect.origin.y == 50)
+        let expectedX = (originalSize.width - targetSize.width) / 2
+        let expectedY = (originalSize.height - targetSize.height) / 2
+        #expect(result.cropRect.origin.x == expectedX)
+        #expect(result.cropRect.origin.y == expectedY)
     }
     
     @Test("Przycinanie ze środka - prostokątne zdjęcie")
     func cropCenterRectangularImage() throws {
         let image = createTestImage(width: 300, height: 200)
+        let originalSize = getImageSize(image)
         let targetSize = CGSize(width: 100, height: 80)
         
         let result = try cropper.cropCenter(image: image, to: targetSize)
@@ -226,8 +269,10 @@ struct ImageCropperTests {
         let croppedSize = getImageSize(result.croppedImage)
         #expect(croppedSize == targetSize)
         
-        #expect(result.cropRect.origin.x == 100)
-        #expect(result.cropRect.origin.y == 60)
+        let expectedX = (originalSize.width - targetSize.width) / 2
+        let expectedY = (originalSize.height - targetSize.height) / 2
+        #expect(result.cropRect.origin.x == expectedX)
+        #expect(result.cropRect.origin.y == expectedY)
     }
     
     // MARK: - Error Handling Tests
@@ -235,7 +280,13 @@ struct ImageCropperTests {
     @Test("Błąd przy nieprawidłowym obszarze przycinania - wykracza poza granice")
     func errorWhenCropRectOutOfBounds() throws {
         let image = createTestImage(width: 100, height: 100)
-        let invalidRect = CGRect(x: 50, y: 50, width: 100, height: 100) // wykracza poza obraz
+        let originalSize = getImageSize(image)
+        let invalidRect = CGRect(
+            x: originalSize.width * 0.6,
+            y: originalSize.height * 0.6,
+            width: originalSize.width * 0.5,
+            height: originalSize.height * 0.5
+        )
         
         #expect(throws: ImageCropperError.self) {
             try cropper.crop(image: image, to: invalidRect)
@@ -265,7 +316,8 @@ struct ImageCropperTests {
     @Test("Błąd przy próbie przycięcia do zbyt dużego rozmiaru ze środka")
     func errorWhenCenterCropSizeTooLarge() throws {
         let image = createTestImage(width: 100, height: 100)
-        let invalidSize = CGSize(width: 200, height: 200)
+        let originalSize = getImageSize(image)
+        let invalidSize = CGSize(width: originalSize.width * 1.5, height: originalSize.height * 1.5)
         
         #expect(throws: ImageCropperError.self) {
             try cropper.cropCenter(image: image, to: invalidSize)
@@ -289,11 +341,11 @@ struct ImageCropperTests {
     @Test("Przycinanie całego zdjęcia (brak zmiany)")
     func cropEntireImage() throws {
         let image = createTestImage(width: 100, height: 100)
-        let rect = CGRect(x: 0, y: 0, width: 100, height: 100)
+        let originalSize = getImageSize(image)
+        let rect = CGRect(x: 0, y: 0, width: originalSize.width, height: originalSize.height)
         
         let result = try cropper.crop(image: image, to: rect)
         
-        let originalSize = getImageSize(image)
         let croppedSize = getImageSize(result.croppedImage)
         #expect(croppedSize == originalSize)
     }
@@ -329,7 +381,7 @@ struct ImageCropperTests {
         
         let squareSize = getImageSize(squareResult.croppedImage)
         #expect(squareSize.width == squareSize.height)
-        #expect(squareSize.width == 400) // min(500, 400)
+        #expect(squareSize.width == min(originalSize.width, originalSize.height))
         
         // Przytnij przycięte zdjęcie jeszcze raz
         let secondCropResult = try cropper.crop(
@@ -383,9 +435,9 @@ struct ImageCropperErrorTests {
     
     @Test("Konkretne opisy błędów")
     func specificErrorDescriptions() {
-        #expect(ImageCropperError.invalidImage.errorDescription == "Dostarczone zdjęcie jest nieprawidłowe")
-        #expect(ImageCropperError.invalidCropRect.errorDescription == "Obszar przycinania jest nieprawidłowy")
-        #expect(ImageCropperError.croppingFailed.errorDescription == "Nie udało się przyciąć zdjęcia")
-        #expect(ImageCropperError.cgImageCreationFailed.errorDescription == "Nie udało się utworzyć CGImage")
+        #expect(ImageCropperError.invalidImage.errorDescription == "err_invalid_image")
+        #expect(ImageCropperError.invalidCropRect.errorDescription == "err_invalid_crop")
+        #expect(ImageCropperError.croppingFailed.errorDescription == "err_crop_failed")
+        #expect(ImageCropperError.cgImageCreationFailed.errorDescription == "err_cgimage_failed")
     }
 }
