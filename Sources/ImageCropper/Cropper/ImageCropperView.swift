@@ -94,7 +94,7 @@ public struct ImageCropperView: View {
             
             Spacer()
             
-            Button("ready") {
+            Button("ready".localized) {
                 do {
                     let result = try viewModel.performCrop()
                     onCrop(result)
@@ -119,7 +119,7 @@ public struct ImageCropperView: View {
                 VStack {
                     Image(systemName: "square")
                         .font(.title2)
-                    Text("Kwadrat".localized)
+                    Text("square".localized)
                         .font(.caption)
                 }
             }
